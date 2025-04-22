@@ -15,12 +15,12 @@
         .container {
             display: flex;
             flex-direction: column;
-            max-width: 1920px;
+            max-width: 1600px;
             margin: 0 auto;
         }
         canvas {
             width: 100%;
-            height: 1080px;
+            height: 900px;
             background-color: #000;
             margin-bottom: 20px;
             border-radius: 5px;
@@ -33,6 +33,27 @@
             padding: 20px;
             background-color: #2d2d2d;
             border-radius: 5px;
+        }
+        .download-container {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        #download-btn {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        #download-btn:hover {
+            background-color: #45a049;
         }
         .control-group {
             flex: 1;
@@ -79,6 +100,10 @@
         <h1>GLSL インタラクティブエディタ</h1>
         
         <canvas id="glCanvas"></canvas>
+        
+        <div class="download-container">
+            <button id="download-btn">1920×1080px画像をダウンロード</button>
+        </div>
         
         <div class="controls">
             <div class="control-group">
@@ -306,6 +331,113 @@
             
             return shader;
         }
+
+        // 指定されたサイズでレンダリングする関数
+        function renderToSize(width, height) {
+            // 高解像度キャンバスを作成
+            const hdCanvas = document.createElement('canvas');
+            hdCanvas.width = width;
+            hdCanvas.height = height;
+            const hdGl = hdCanvas.getContext('webgl');
+            
+            if (!hdGl) {
+                alert('高解像度レンダリング用のWebGLコンテキストを作成できませんでした。');
+                return null;
+            }
+            
+            // シェーダーを再作成
+            const hdVertexShader = createShader(hdGl, hdGl.VERTEX_SHADER, vertexShaderSource);
+            const hdFragmentShader = createShader(hdGl, hdGl.FRAGMENT_SHADER, fragmentShaderSource);
+            
+            const hdProgram = hdGl.createProgram();
+            hdGl.attachShader(hdProgram, hdVertexShader);
+            hdGl.attachShader(hdProgram, hdFragmentShader);
+            hdGl.linkProgram(hdProgram);
+            
+            if (!hdGl.getProgramParameter(hdProgram, hdGl.LINK_STATUS)) {
+                console.error('高解像度プログラムのリンクエラー:', hdGl.getProgramInfoLog(hdProgram));
+                return null;
+            }
+            
+            hdGl.useProgram(hdProgram);
+            
+            // バッファを設定
+            const hdPositionBuffer = hdGl.createBuffer();
+            hdGl.bindBuffer(hdGl.ARRAY_BUFFER, hdPositionBuffer);
+            const positions = [
+                -1.0, -1.0,
+                 1.0, -1.0,
+                -1.0,  1.0,
+                 1.0,  1.0
+            ];
+            hdGl.bufferData(hdGl.ARRAY_BUFFER, new Float32Array(positions), hdGl.STATIC_DRAW);
+            
+            const hdPositionAttributeLocation = hdGl.getAttribLocation(hdProgram, 'aVertexPosition');
+            hdGl.enableVertexAttribArray(hdPositionAttributeLocation);
+            hdGl.vertexAttribPointer(hdPositionAttributeLocation, 2, hdGl.FLOAT, false, 0, 0);
+            
+            // uniform変数を設定
+            const hdUniformLocations = {
+                time: hdGl.getUniformLocation(hdProgram, 'u_time'),
+                resolution: hdGl.getUniformLocation(hdProgram, 'u_resolution'),
+                scale: hdGl.getUniformLocation(hdProgram, 'u_scale'),
+                octaves: hdGl.getUniformLocation(hdProgram, 'u_octaves'),
+                initialValue: hdGl.getUniformLocation(hdProgram, 'u_initialValue'),
+                initialAmplitude: hdGl.getUniformLocation(hdProgram, 'u_initialAmplitude'),
+                rotAngle1: hdGl.getUniformLocation(hdProgram, 'u_rotAngle1'),
+                rotAngle2: hdGl.getUniformLocation(hdProgram, 'u_rotAngle2'),
+                distortion1: hdGl.getUniformLocation(hdProgram, 'u_distortion1'),
+                distortion2: hdGl.getUniformLocation(hdProgram, 'u_distortion2'),
+                distortion3: hdGl.getUniformLocation(hdProgram, 'u_distortion3'),
+                color1: hdGl.getUniformLocation(hdProgram, 'u_color1'),
+                color2: hdGl.getUniformLocation(hdProgram, 'u_color2'),
+                color3: hdGl.getUniformLocation(hdProgram, 'u_color3'),
+                color4: hdGl.getUniformLocation(hdProgram, 'u_color4')
+            };
+            
+            const currentTime = (Date.now() - startTime) / 1000 * params.timeSpeed;
+            
+            hdGl.uniform1f(hdUniformLocations.time, currentTime);
+            hdGl.uniform2f(hdUniformLocations.resolution, width, height);
+            hdGl.uniform1f(hdUniformLocations.scale, params.scale);
+            hdGl.uniform1i(hdUniformLocations.octaves, params.octaves);
+            hdGl.uniform1f(hdUniformLocations.initialValue, params.initialValue);
+            hdGl.uniform1f(hdUniformLocations.initialAmplitude, params.initialAmplitude);
+            hdGl.uniform1f(hdUniformLocations.rotAngle1, params.rotAngle1);
+            hdGl.uniform1f(hdUniformLocations.rotAngle2, params.rotAngle2);
+            hdGl.uniform1f(hdUniformLocations.distortion1, params.distortion1);
+            hdGl.uniform1f(hdUniformLocations.distortion2, params.distortion2);
+            hdGl.uniform1f(hdUniformLocations.distortion3, params.distortion3);
+            hdGl.uniform3fv(hdUniformLocations.color1, params.color1);
+            hdGl.uniform3fv(hdUniformLocations.color2, params.color2);
+            hdGl.uniform3fv(hdUniformLocations.color3, params.color3);
+            hdGl.uniform3fv(hdUniformLocations.color4, params.color4);
+            
+            // ビューポートを設定
+            hdGl.viewport(0, 0, width, height);
+            
+            // 描画
+            hdGl.clearColor(0.0, 0.0, 0.0, 1.0);
+            hdGl.clear(hdGl.COLOR_BUFFER_BIT);
+            hdGl.drawArrays(hdGl.TRIANGLE_STRIP, 0, 4);
+            
+            return hdCanvas;
+        }
+
+        // ダウンロードボタンのイベントハンドラ
+        document.getElementById('download-btn').addEventListener('click', function() {
+            // 16:9比率の1920x1080画像をレンダリング
+            const hdCanvas = renderToSize(1920, 1080);
+            
+            if (hdCanvas) {
+                // 画像をダウンロード
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                const link = document.createElement('a');
+                link.download = `glsl-art-${timestamp}.png`;
+                link.href = hdCanvas.toDataURL('image/png');
+                link.click();
+            }
+        });
 
         const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
         const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
