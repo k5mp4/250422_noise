@@ -112,6 +112,16 @@
                     <input type="range" id="initialValue" min="0" max="0.5" step="0.01" value="0.1">
                     <span class="value-display" id="initialValue-value">0.1</span>
                 </div>
+                <div class="parameter-row">
+                    <label for="rotAngle1">回転角度1:</label>
+                    <input type="range" id="rotAngle1" min="0" max="6.28" step="0.01" value="0.5">
+                    <span class="value-display" id="rotAngle1-value">0.5</span>
+                </div>
+                <div class="parameter-row">
+                    <label for="rotAngle2">回転角度2:</label>
+                    <input type="range" id="rotAngle2" min="0" max="6.28" step="0.01" value="0.1">
+                    <span class="value-display" id="rotAngle2-value">0.1</span>
+                </div>
             </div>
             
             <div class="control-group">
@@ -175,6 +185,8 @@
             uniform int u_octaves;
             uniform float u_initialValue;
             uniform float u_initialAmplitude;
+            uniform float u_rotAngle1;
+            uniform float u_rotAngle2;
             uniform float u_distortion1;
             uniform float u_distortion2;
             uniform float u_distortion3;
@@ -215,8 +227,8 @@
                 float a = u_initialAmplitude; 
                 vec2 shift = vec2(23.0);
                 // Rotate to reduce axial bias
-                mat2 rot = mat2(cos(0.5), sin(0.5),
-                               -sin(0.1), cos(0.1));
+                mat2 rot = mat2(cos(u_rotAngle1), sin(u_rotAngle1),
+                               -sin(u_rotAngle2), cos(u_rotAngle2));
                 for (int i = 0; i < 12; ++i) {
                     if(i >= u_octaves) break;
                     v += a * noise(_st);
@@ -333,6 +345,8 @@
             octaves: gl.getUniformLocation(program, 'u_octaves'),
             initialValue: gl.getUniformLocation(program, 'u_initialValue'),
             initialAmplitude: gl.getUniformLocation(program, 'u_initialAmplitude'),
+            rotAngle1: gl.getUniformLocation(program, 'u_rotAngle1'),
+            rotAngle2: gl.getUniformLocation(program, 'u_rotAngle2'),
             distortion1: gl.getUniformLocation(program, 'u_distortion1'),
             distortion2: gl.getUniformLocation(program, 'u_distortion2'),
             distortion3: gl.getUniformLocation(program, 'u_distortion3'),
@@ -349,6 +363,8 @@
             octaves: 8,
             initialValue: 0.1,
             initialAmplitude: 0.4,
+            rotAngle1: 0.5,
+            rotAngle2: 0.1,
             distortion1: 0.00001,
             distortion2: 0.005,
             distortion3: 0.12,
@@ -382,6 +398,16 @@
         document.getElementById('initialAmplitude').addEventListener('input', (e) => {
             params.initialAmplitude = parseFloat(e.target.value);
             document.getElementById('initialAmplitude-value').textContent = params.initialAmplitude.toFixed(2);
+        });
+        
+        document.getElementById('rotAngle1').addEventListener('input', (e) => {
+            params.rotAngle1 = parseFloat(e.target.value);
+            document.getElementById('rotAngle1-value').textContent = params.rotAngle1.toFixed(2);
+        });
+        
+        document.getElementById('rotAngle2').addEventListener('input', (e) => {
+            params.rotAngle2 = parseFloat(e.target.value);
+            document.getElementById('rotAngle2-value').textContent = params.rotAngle2.toFixed(2);
         });
         
         document.getElementById('distortion1').addEventListener('input', (e) => {
@@ -434,6 +460,8 @@
             gl.uniform1i(uniformLocations.octaves, params.octaves);
             gl.uniform1f(uniformLocations.initialValue, params.initialValue);
             gl.uniform1f(uniformLocations.initialAmplitude, params.initialAmplitude);
+            gl.uniform1f(uniformLocations.rotAngle1, params.rotAngle1);
+            gl.uniform1f(uniformLocations.rotAngle2, params.rotAngle2);
             gl.uniform1f(uniformLocations.distortion1, params.distortion1);
             gl.uniform1f(uniformLocations.distortion2, params.distortion2);
             gl.uniform1f(uniformLocations.distortion3, params.distortion3);
